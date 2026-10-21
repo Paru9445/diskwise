@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diskwise"
+dynamic = ["version"]
+description = "Find out what's eating your disk, why it's there, and whether it's safe to delete."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Praveen Saxena" }]
+requires-python = ">=3.9"
+dependencies = []
+keywords = ["disk", "cleanup", "cache", "storage", "developer-tools", "xcode", "docker", "node_modules", "android"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/Paru9445/diskwise"
+Issues = "https://github.com/Paru9445/diskwise/issues"
+
+[project.scripts]
+diskwise = "diskwise.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "diskwise.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+diskwise = ["ui.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]

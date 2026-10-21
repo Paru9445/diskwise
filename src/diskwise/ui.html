@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diskwise</title>
+<style>
+  :root {
+    --bg: #f6f6f3; --card: #ffffff; --fg: #1d1f1c; --muted: #6b6f68; --border: #e3e3dd;
+    --safe: #2f8f4e; --safe-bg: #e5f4ea; --check: #b7791f; --check-bg: #fbf0dc;
+    --keep: #c2413b; --keep-bg: #fbe6e4; --accent: #24563a; --accent-fg: #fff; --track: #ebebe5;
+    --c0: #3b6fb6; --c1: #8a5cc2; --c2: #2f8f8a; --c3: #c2703b; --c4: #b6447a; --c5: #6b8f2f; --c6: #5d6b78;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141513; --card: #1d1e1b; --fg: #ecece6; --muted: #9a9d95; --border: #2e302b;
+      --safe: #5cc27f; --safe-bg: #1c3324; --check: #e0a84a; --check-bg: #3a2e18;
+      --keep: #e57a73; --keep-bg: #3b2120; --accent: #5cc27f; --accent-fg: #0d1a11; --track: #2a2c27;
+      --c0: #6f9ee0; --c1: #b28be6; --c2: #5cc2bc; --c3: #e69a66; --c4: #e07aa8; --c5: #9cc25c; --c6: #8d9aa6;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 120px; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  header .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+  header h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  button { font: inherit; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--fg); padding: 8px 14px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  label.toggle { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .disk .row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+  .meter { height: 12px; border-radius: 6px; background: var(--track); overflow: hidden; display: flex; }
+  .meter span { display: block; height: 100%; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+  .stat { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); background: var(--card); }
+  .stat b { display: block; font-size: 24px; letter-spacing: -0.02em; }
+  .stat small { color: var(--muted); }
+  .stat.safe b { color: var(--safe); } .stat.check b { color: var(--check); } .stat.keep b { color: var(--keep); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 4px 8px; display: flex; justify-content: space-between; }
+  .item { display: grid; grid-template-columns: 26px 1fr auto; gap: 4px 12px; padding: 12px 14px; border-top: 1px solid var(--border); align-items: start; }
+  .item:first-child { border-top: 0; }
+  .list { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .item input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--accent); }
+  .item .name { font-weight: 600; cursor: pointer; }
+  .item .what { color: var(--muted); font-size: 14px; }
+  .item .right { text-align: right; min-width: 110px; }
+  .item .size { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bar { height: 4px; border-radius: 2px; background: var(--track); margin-top: 6px; overflow: hidden; }
+  .bar span { display: block; height: 100%; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; margin-left: 6px; white-space: nowrap; }
+  .pill.safe { background: var(--safe-bg); color: var(--safe); }
+  .pill.check { background: var(--check-bg); color: var(--check); }
+  .pill.keep { background: var(--keep-bg); color: var(--keep); }
+  .more { grid-column: 2 / 4; font-size: 13px; color: var(--muted); display: none; }
+  .item.open .more { display: block; }
+  .more p { margin: 6px 0; }
+  .more table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .more td { padding: 2px 0; vertical-align: top; word-break: break-all; }
+  .more td:first-child { width: 90px; font-variant-numeric: tabular-nums; color: var(--fg); }
+  .tip { color: var(--fg); }
+  .notice { font-size: 14px; color: var(--muted); border-left: 3px solid var(--check); padding: 4px 10px; margin: 8px 0; }
+  .empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+  .empty b { display: block; color: var(--fg); font-size: 18px; margin-bottom: 6px; }
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: 12px 16px; }
+  .bottom .in { max-width: 980px; margin: 0 auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .bottom .sel { margin-right: auto; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; padding: 16px; }
+  .modal.show { display: flex; }
+  .modal .box { background: var(--card); border-radius: 14px; max-width: 560px; width: 100%; padding: 20px; max-height: 85vh; overflow: auto; border: 1px solid var(--border); }
+  .modal h3 { margin: 0 0 10px; }
+  .modal ul { padding-left: 18px; }
+  .modal li { margin-bottom: 8px; }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+  .result { border-left: 3px solid var(--safe); }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--track); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: -2px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  code { font-size: 13px; background: var(--track); padding: 1px 5px; border-radius: 4px; word-break: break-all; }
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: 1fr; }
+    .item { grid-template-columns: 26px 1fr; }
+    .item .right { grid-column: 2; text-align: left; }
+    .more { grid-column: 1 / 3; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="none" stroke="var(--track)" stroke-width="5"/><path d="M17 2 A15 15 0 0 1 31.3 21.6" fill="none" stroke="var(--safe)" stroke-width="5"/><path d="M31.3 21.6 A15 15 0 0 1 21 31.5" fill="none" stroke="var(--check)" stroke-width="5"/></svg>
+      <div><h1>Diskwise</h1><p>What's eating your disk, why it's there, and whether it's safe to delete.</p></div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="projects" checked> Look through projects</label>
+    <button id="scanPhone">Scan Android phone</button>
+    <button id="scan" class="primary">Scan this computer</button>
+  </header>
+
+  <div class="card disk" id="disk" hidden>
+    <div class="row"><span id="diskText"></span><span id="diskFree"></span></div>
+    <div class="meter" id="diskMeter"></div>
+  </div>
+
+  <div id="status"></div>
+  <div id="results">
+    <div class="card empty"><b>Nothing scanned yet</b>Scanning only looks. Nothing is deleted unless you pick it and confirm.</div>
+  </div>
+</div>
+
+<div class="bottom" id="bottom" hidden>
+  <div class="in">
+    <span class="sel" id="selText">Nothing selected</span>
+    <button id="pickSafe">Select all safe</button>
+    <button id="clean" class="primary" disabled>Clean selected…</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const PLATFORM = "__PLATFORM__";
+const BIN = PLATFORM === "windows" ? "Recycle Bin" : "Trash";
+const LABELS = { safe: "Safe", check: "Check first", keep: "Keep" };
+let data = null;
+const selected = new Set();
+
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const kid of kids) if (kid != null) n.append(kid);
+  return n;
+}
+function human(n) {
+  const units = ["B", "KB", "MB", "GB", "TB"]; let i = 0;
+  while (Math.abs(n) >= 1000 && i < units.length - 1) { n /= 1000; i++; }
+  return i === 0 ? `${n} B` : `${n.toFixed(1)} ${units[i]}`;
+}
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? "POST" : "GET",
+    headers: { "X-Diskwise-Token": TOKEN, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || res.statusText);
+  return json;
+}
+
+function showDisk(disk) {
+  if (!disk) return;
+  $("disk").hidden = false;
+  $("diskText").textContent = `${human(disk.used)} used of ${human(disk.total)}`;
+  $("diskFree").textContent = `${human(disk.free)} free`;
+  const m = $("diskMeter"); m.replaceChildren();
+  const safe = data ? data.totals.safe : 0;
+  const usedOther = Math.max(0, disk.used - safe);
+  m.append(el("span", { style: `width:${usedOther / disk.total * 100}%;background:var(--muted)`, title: "Used" }));
+  m.append(el("span", { style: `width:${safe / disk.total * 100}%;background:var(--safe)`, title: "Safe to free" }));
+}
+
+let poll = null;
+function busy(message) {
+  $("status").replaceChildren(el("div", { class: "card" }, el("span", { class: "spinner" }), el("span", { id: "prog", text: message })));
+  $("scan").disabled = $("scanPhone").disabled = true;
+  poll = setInterval(async () => {
+    try { const p = await api("/api/progress"); if (p.message && $("prog")) $("prog").textContent = p.message + "…"; } catch {}
+  }, 600);
+}
+function idle() {
+  clearInterval(poll); $("status").replaceChildren();
+  $("scan").disabled = $("scanPhone").disabled = false;
+}
+
+async function runScan(phone) {
+  busy(phone ? "Reading your phone's storage…" : "Scanning…");
+  selected.clear();
+  try {
+    data = await api(`/api/scan?android=${phone ? 1 : 0}&projects=${$("projects").checked ? 1 : 0}`);
+    data.phone = phone;
+    render();
+  } catch (e) {
+    $("results").replaceChildren(el("div", { class: "card notice", text: "Scan failed: " + e.message }));
+  } finally { idle(); }
+}
+
+function render() {
+  showDisk(data.phone ? null : data.disk);
+  const out = $("results"); out.replaceChildren();
+  const items = data.items;
+  const t = data.totals;
+  out.append(el("div", { class: "stats" },
+    el("div", { class: "stat safe" }, el("b", { text: human(t.safe) }), el("small", { text: "🟢 Safe to free" })),
+    el("div", { class: "stat check" }, el("b", { text: human(t.check) }), el("small", { text: "🟡 Worth a look" })),
+    el("div", { class: "stat keep" }, el("b", { text: human(t.keep) }), el("small", { text: "🔴 Keep (shown for context)" })),
+  ));
+  for (const n of data.notices) out.append(el("div", { class: "notice", text: n }));
+  if (!items.length) {
+    out.append(el("div", { class: "card empty" }, el("b", { text: "Nothing big found" }), "Your disk is in good shape."));
+    $("bottom").hidden = true; return;
+  }
+
+  const cats = data.categories.filter((c) => items.some((i) => i.category === c));
+  const sizeOf = (c) => items.filter((i) => i.category === c).reduce((a, i) => a + i.size, 0);
+  const all = items.reduce((a, i) => a + i.size, 0);
+  const color = (c) => `var(--c${data.categories.indexOf(c) % 7})`;
+  const overview = el("div", { class: "card" }, el("div", { class: "meter" }), el("div", { class: "legend" }));
+  for (const c of cats.sort((a, b) => sizeOf(b) - sizeOf(a))) {
+    overview.firstChild.append(el("span", { style: `width:${sizeOf(c) / all * 100}%;background:${color(c)}`, title: `${c}: ${human(sizeOf(c))}` }));
+    overview.lastChild.append(el("span", {}, el("i", { style: `background:${color(c)}` }), `${c} ${human(sizeOf(c))}`));
+  }
+  out.append(overview);
+
+  const biggest = Math.max(...items.map((i) => i.size));
+  for (const c of cats) {
+    const group = items.filter((i) => i.category === c);
+    out.append(el("h2", {}, el("span", { text: c }), el("span", { text: human(sizeOf(c)) })));
+    const list = el("div", { class: "list" });
+    for (const it of group) list.append(row(it, biggest, color(c)));
+    out.append(list);
+  }
+  $("bottom").hidden = false;
+  updateSelection();
+}
+
+function row(it, biggest, color) {
+  const box = it.cleanable
+    ? el("input", { type: "checkbox", "aria-label": `Select ${it.name}`, onchange: (e) => { e.target.checked ? selected.add(it.id) : selected.delete(it.id); updateSelection(); } })
+    : el("span");
+  if (it.cleanable && selected.has(it.id)) box.checked = true;
+  const more = el("div", { class: "more" },
+    el("p", { text: `Made by ${it.creator}. Comes back: ${it.comes_back}` }),
+    it.hint ? el("p", { class: "tip", text: (it.action === "manual" ? "Do it yourself: " : "Tip: ") + it.hint }) : null,
+    it.action === "command" ? el("p", {}, "Cleaned by running ", el("code", { text: it.command.join(" ") })) : null,
+    it.denied ? el("p", { text: `${it.denied} folder(s) inside couldn't be read and aren't counted.` }) : null,
+  );
+  if (it.details.length) {
+    const table = el("table");
+    for (const d of it.details.slice(0, 25)) table.append(el("tr", {}, el("td", { text: human(d.size) }), el("td", { text: d.label })));
+    if (it.details.length > 25) table.append(el("tr", {}, el("td"), el("td", { text: `…and ${it.details.length - 25} more` })));
+    more.append(table);
+  }
+  const node = el("div", { class: "item" },
+    box,
+    el("div", {},
+      el("span", { class: "name", text: it.name, title: "Show details", onclick: () => node.classList.toggle("open") }),
+      el("span", { class: `pill ${it.safety}`, text: LABELS[it.safety] }),
+      el("div", { class: "what", text: it.what }),
+    ),
+    el("div", { class: "right" },
+      el("div", { class: "size", text: human(it.size) }),
+      el("div", { class: "bar" }, el("span", { style: `width:${Math.max(2, it.size / biggest * 100)}%;background:${color}` })),
+    ),
+    more,
+  );
+  return node;
+}
+
+function updateSelection() {
+  const items = data.items.filter((i) => selected.has(i.id));
+  const size = items.reduce((a, i) => a + i.size, 0);
+  $("selText").textContent = items.length ? `${items.length} selected · ${human(size)}` : "Nothing selected";
+  $("clean").disabled = !items.length;
+}
+
+function confirmClean() {
+  const items = data.items.filter((i) => selected.has(i.id));
+  const box = $("modalBox"); box.replaceChildren();
+  box.append(el("h3", { text: `Clean ${items.length} item${items.length > 1 ? "s" : ""} (${human(items.reduce((a, i) => a + i.size, 0))})?` }));
+  const ul = el("ul");
+  for (const it of items) {
+    const how = it.action === "command"
+      ? el("span", {}, " runs ", el("code", { text: it.command.join(" ") }), " (can't be undone)")
+      : ` moves to the ${BIN}`;
+    ul.append(el("li", {}, el("b", { text: it.name }), how,
+      it.safety === "check" && it.hint ? el("div", { class: "what", text: "🟡 " + it.hint }) : null));
+  }
+  box.append(ul);
+  box.append(el("p", { class: "what", text: `Files go to the ${BIN}, so you can undo. Empty the ${BIN} afterwards to get the space back.` }));
+  box.append(el("div", { class: "actions" },
+    el("button", { text: "Cancel", onclick: () => $("modal").classList.remove("show") }),
+    el("button", { class: "primary", text: "Clean", onclick: doClean }),
+  ));
+  $("modal").classList.add("show");
+}
+
+async function doClean() {
+  $("modal").classList.remove("show");
+  busy("Cleaning…");
+  try {
+    const r = await api("/api/clean", { ids: [...selected] });
+    selected.clear();
+    data.items = data.items.filter((i) => !r.outcomes.some((o) => o.id === i.id && o.freed && !o.errors.length));
+    for (const s of ["safe", "check", "keep"]) data.totals[s] = data.items.filter((i) => i.safety === s).reduce((a, i) => a + i.size, 0);
+    data.disk = r.disk || data.disk;
+    render();
+    const card = el("div", { class: "card result" },
+      el("b", { text: `Cleaned ${human(r.freed)}.` }),
+      el("p", { class: "what", text: r.outcomes.some((o) => o.moved) ? `Files are in the ${BIN}: empty it to get the space back.` : "" }));
+    for (const o of r.outcomes) for (const e of o.errors.slice(0, 3)) card.append(el("div", { class: "what", text: `Skipped in ${o.name}: ${e}` }));
+    if (r.outcomes.some((o) => o.moved)) card.append(el("button", { text: "Undo", onclick: doUndo }));
+    $("results").prepend(card);
+  } catch (e) {
+    $("results").prepend(el("div", { class: "card notice", text: "Clean failed: " + e.message }));
+  } finally { idle(); }
+}
+
+async function doUndo() {
+  try {
+    const r = await api("/api/undo", {});
+    const msg = r.session ? `Put back ${r.restored} item(s).` + (r.errors.length ? ` ${r.errors.length} couldn't be restored.` : "") + " Scan again to refresh." : "Nothing to undo.";
+    $("results").prepend(el("div", { class: "card result", text: msg }));
+  } catch (e) { alert(e.message); }
+}
+
+$("scan").onclick = () => runScan(false);
+$("scanPhone").onclick = () => runScan(true);
+$("clean").onclick = confirmClean;
+$("pickSafe").onclick = () => { for (const i of data.items) if (i.cleanable && i.safety === "safe") selected.add(i.id); render(); };
+$("modal").onclick = (e) => { if (e.target === $("modal")) $("modal").classList.remove("show"); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("modal").classList.remove("show"); });
+</script>
+</body>
+</html>

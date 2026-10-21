@@ -1,0 +1,45 @@
+name: New space hog
+description: Tell Diskwise about a folder that fills up disks
+labels: ["new location"]
+body:
+  - type: input
+    id: path
+    attributes:
+      label: Folder path
+      description: Where it lives. Use ~ for your home folder. Add the path on other systems if you know it.
+      placeholder: ~/Library/Caches/SomeApp
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Which app or tool creates it?
+    validations:
+      required: true
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Is it safe to delete?
+      options:
+        - Safe (it's rebuilt or re-downloaded automatically)
+        - Check first (it may hold something people want)
+        - Keep (the app needs it)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What happens after deleting it?
+      description: Does it come back on its own? Does anything break or need re-downloading?
+  - type: input
+    id: size
+    attributes:
+      label: How big did it get for you?
+      placeholder: 12 GB
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      multiple: true
+      options: [macOS, Windows, Linux, Android]

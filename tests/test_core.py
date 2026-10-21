@@ -39,6 +39,7 @@ def test_usage_counts_files_and_skips_symlinks(tmp_path):
     assert 100_000 <= u.bytes < 400_000  # the 500 KB file behind the link is not counted
 
 
+@pytest.mark.skipif(os.name == "nt", reason="os.scandir doesn't report link counts on Windows")
 def test_usage_counts_hard_links_once(tmp_path):
     original = write(tmp_path / "d" / "file.bin", 200_000)
     try:

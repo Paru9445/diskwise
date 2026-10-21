@@ -17,6 +17,12 @@ def fake_home(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(home / ".local" / "state"))
     monkeypatch.setenv("DISKWISE_DATA_DIR", str(tmp_path / "diskwise-data"))
     (home / ".Trash").mkdir()
+    # Keep system-wide locations (/Applications/Xcode*.app, simulator runtimes) out of
+    # tests: CI Macs have many Xcodes, and tests should only see the fake home.
+    from diskwise import catalog, finders
+
+    monkeypatch.setattr(catalog, "RULES", [r for r in catalog.RULES if not any(p.startswith("/") for p in r.paths)])
+    monkeypatch.setattr(finders, "simulator_runtimes", lambda notices: [])
     return home
 
 

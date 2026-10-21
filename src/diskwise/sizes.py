@@ -2,7 +2,8 @@
 
 Sizes are allocated blocks, not apparent sizes, so sparse files (like a Docker
 or emulator disk image) are counted for what they actually take up. Symlinks
-are never followed, and hard-linked files are counted once.
+are never followed, and hard-linked files are counted once (except on Windows,
+where os.scandir doesn't report link counts; hard links are rare there).
 """
 
 from __future__ import annotations

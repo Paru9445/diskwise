@@ -158,12 +158,17 @@ def make_handler(state: State, port_ref: list[int]):
     return Handler
 
 
-def serve(port: int = 0, open_browser: bool = True) -> int:
+def make_server(port: int = 0) -> tuple[ThreadingHTTPServer, str]:
+    """Bind the server on 127.0.0.1 and return it with the page's URL, without serving yet."""
     state = State()
     port_ref = [port]
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(state, port_ref))
     port_ref[0] = server.server_address[1]
-    url = f"http://127.0.0.1:{port_ref[0]}/"
+    return server, f"http://127.0.0.1:{port_ref[0]}/"
+
+
+def serve(port: int = 0, open_browser: bool = True) -> int:
+    server, url = make_server(port)
     print(f"\n  Diskwise is open at {url}")
     print("  It only listens on this computer. Press Ctrl+C to stop.\n")
     if open_browser:

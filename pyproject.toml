@@ -30,8 +30,14 @@ classifiers = [
 Homepage = "https://github.com/Paru9445/diskwise"
 Issues = "https://github.com/Paru9445/diskwise/issues"
 
+[project.optional-dependencies]
+desktop = ["pywebview>=5"]
+
 [project.scripts]
 diskwise = "diskwise.cli:main"
+
+[project.gui-scripts]
+diskwise-app = "diskwise.desktop:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "diskwise.__version__" }

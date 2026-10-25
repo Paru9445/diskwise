@@ -12,6 +12,7 @@ import os
 import stat
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 _REPARSE_POINT = 0x400  # FILE_ATTRIBUTE_REPARSE_POINT: junctions and symlinks on Windows
 
@@ -41,8 +42,20 @@ def _is_link(st: os.stat_result) -> bool:
     return bool(getattr(st, "st_file_attributes", 0) & _REPARSE_POINT)
 
 
-def usage(path: str | os.PathLike, seen: set | None = None) -> Usage:
-    """Total allocated size of `path` (file or folder), walking without following links."""
+def usage(
+    path: str | os.PathLike,
+    seen: set | None = None,
+    one_device: bool = False,
+    cancelled: Callable[[], bool] | None = None,
+    skip: set[str] | frozenset[str] = frozenset(),
+) -> Usage:
+    """Total allocated size of `path` (file or folder), walking without following links.
+
+    With `one_device`, folders on another disk or mount (like /Volumes/* or /proc)
+    are skipped, so measuring / doesn't walk other drives or system mounts.
+    Folders in `skip` are never entered. `cancelled` is checked between folders
+    to stop a long walk early.
+    """
     seen = set() if seen is None else seen
     result = Usage()
     try:
@@ -58,8 +71,11 @@ def usage(path: str | os.PathLike, seen: set | None = None) -> Usage:
         return result
 
     result.bytes += _allocated(st)
+    device = st.st_dev
     stack = [os.fspath(path)]
     while stack:
+        if cancelled and cancelled():
+            break
         current = stack.pop()
         try:
             with os.scandir(current) as it:
@@ -73,6 +89,8 @@ def usage(path: str | os.PathLike, seen: set | None = None) -> Usage:
             except OSError:
                 continue
             if stat.S_ISDIR(est.st_mode) and not _is_link(est):
+                if (one_device and est.st_dev != device) or entry.path in skip:
+                    continue
                 result.bytes += _allocated(est)
                 stack.append(entry.path)
             else:

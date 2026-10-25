@@ -207,6 +207,30 @@ def cmd_rules(args) -> int:
     return 0
 
 
+def cmd_measure(args) -> int:
+    from .folders import measure, resolve_folder, to_dicts
+
+    try:
+        folder = resolve_folder(args.folder)
+        entries = measure(folder)
+    except (ValueError, OSError) as exc:
+        print(f"  {exc}", file=sys.stderr)
+        return 1
+    if args.out or args.json:
+        data = json.dumps({"path": str(folder), "entries": to_dicts(entries)})
+        if args.out:
+            Path(args.out).write_text(data, encoding="utf-8")
+        else:
+            print(data)
+        return 0
+    for e in entries:
+        if e.size or e.other_disk:
+            note = "  (another disk)" if e.other_disk else (f"  ({e.denied} unreadable)" if e.denied else "")
+            print(f"  {human(e.size):>10}  {e.name}{'/' if e.is_dir else ''}{note}")
+    print(f"\n  {human(sum(e.size for e in entries))} in {folder}")
+    return 0
+
+
 def cmd_ui(args) -> int:
     from .ui import serve
 
@@ -256,6 +280,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("rules", help="list every location Diskwise knows about")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_rules)
+
+    p = sub.add_parser("measure", help="show what's inside any folder, biggest first (deletes nothing)")
+    p.add_argument("folder", nargs="?", default="~", help="the folder to measure (default: your home folder)")
+    p.add_argument("--json", action="store_true", help="print results as JSON")
+    p.add_argument("--out", metavar="FILE", help="write JSON results to FILE")
+    p.set_defaults(func=cmd_measure)
 
     p = sub.add_parser("ui", help="open the visual view in your browser")
     p.add_argument("--port", type=int, default=0, help="port to listen on (default: any free port)")

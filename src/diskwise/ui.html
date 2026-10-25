@@ -9,6 +9,7 @@
     --bg: #f6f6f3; --card: #ffffff; --fg: #1d1f1c; --muted: #6b6f68; --border: #e3e3dd;
     --safe: #2f8f4e; --safe-bg: #e5f4ea; --check: #b7791f; --check-bg: #fbf0dc;
     --keep: #c2413b; --keep-bg: #fbe6e4; --accent: #24563a; --accent-fg: #fff; --track: #ebebe5;
+    --hover: #f0f0eb;
     --c0: #3b6fb6; --c1: #8a5cc2; --c2: #2f8f8a; --c3: #c2703b; --c4: #b6447a; --c5: #6b8f2f; --c6: #5d6b78;
   }
   @media (prefers-color-scheme: dark) {
@@ -16,20 +17,32 @@
       --bg: #141513; --card: #1d1e1b; --fg: #ecece6; --muted: #9a9d95; --border: #2e302b;
       --safe: #5cc27f; --safe-bg: #1c3324; --check: #e0a84a; --check-bg: #3a2e18;
       --keep: #e57a73; --keep-bg: #3b2120; --accent: #5cc27f; --accent-fg: #0d1a11; --track: #2a2c27;
+      --hover: #252723;
       --c0: #6f9ee0; --c1: #b28be6; --c2: #5cc2bc; --c3: #e69a66; --c4: #e07aa8; --c5: #9cc25c; --c6: #8d9aa6;
     }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif; }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 120px; }
-  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  body.app { user-select: none; -webkit-user-select: none; cursor: default; }
+  body.app .selectable { user-select: text; -webkit-user-select: text; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 120px; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
   header .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
   header h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
   header p { margin: 0; color: var(--muted); font-size: 13px; }
+  nav { display: flex; gap: 2px; background: var(--track); border-radius: 9px; padding: 3px; }
+  nav button { border: 0; background: transparent; padding: 6px 14px; border-radius: 7px; font-weight: 500; position: relative; }
+  nav button.on { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  nav .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--check); }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar .grow { margin-right: auto; }
   button { font: inherit; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--fg); padding: 8px 14px; cursor: pointer; }
   button:hover:not(:disabled) { border-color: var(--muted); }
   button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+  button.small { padding: 4px 10px; font-size: 13px; }
+  button.link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; }
   button:disabled { opacity: .5; cursor: default; }
+  input[type=text] { font: inherit; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--fg); padding: 7px 10px; min-width: 0; }
   label.toggle { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .disk .row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
@@ -57,6 +70,7 @@
   .pill.safe { background: var(--safe-bg); color: var(--safe); }
   .pill.check { background: var(--check-bg); color: var(--check); }
   .pill.keep { background: var(--keep-bg); color: var(--keep); }
+  .pill.muted { background: var(--track); color: var(--muted); }
   .more { grid-column: 2 / 4; font-size: 13px; color: var(--muted); display: none; }
   .item.open .more { display: block; }
   .more p { margin: 6px 0; }
@@ -70,7 +84,7 @@
   .bottom { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: 12px 16px; }
   .bottom .in { max-width: 980px; margin: 0 auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .bottom .sel { margin-right: auto; }
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; padding: 16px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 5; }
   .modal.show { display: flex; }
   .modal .box { background: var(--card); border-radius: 14px; max-width: 560px; width: 100%; padding: 20px; max-height: 85vh; overflow: auto; border: 1px solid var(--border); }
   .modal h3 { margin: 0 0 10px; }
@@ -81,11 +95,50 @@
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--track); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: -2px; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   code { font-size: 13px; background: var(--track); padding: 1px 5px; border-radius: 4px; word-break: break-all; }
+
+  /* Folders */
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; font-size: 14px; }
+  .crumbs button { border: 0; background: none; padding: 3px 6px; border-radius: 6px; color: var(--muted); }
+  .crumbs button:last-child { color: var(--fg); font-weight: 600; }
+  .crumbs button:hover { background: var(--track); }
+  .crumbs span { color: var(--muted); }
+  .entry { display: grid; grid-template-columns: 22px 1fr auto auto; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--border); align-items: center; }
+  .entry:first-child { border-top: 0; }
+  .entry.dir { cursor: pointer; }
+  .entry.dir:hover { background: var(--hover); }
+  .entry .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .entry .sub { font-size: 12px; color: var(--muted); }
+  .entry .sz { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; min-width: 90px; }
+  .entry .sz .bar { width: 90px; margin-left: auto; }
+  .entry .reveal { visibility: hidden; }
+  .entry:hover .reveal { visibility: visible; }
+  .pathform { display: flex; gap: 8px; flex: 1; min-width: 240px; }
+  .pathform input { flex: 1; }
+
+  /* Access */
+  .perm { display: grid; grid-template-columns: 34px 1fr auto; gap: 4px 14px; padding: 16px; border-top: 1px solid var(--border); align-items: start; }
+  .perm:first-child { border-top: 0; }
+  .perm .icon { font-size: 22px; line-height: 1; }
+  .perm h4 { margin: 0 0 2px; font-size: 15px; }
+  .perm p { margin: 0; color: var(--muted); font-size: 14px; }
+  .perm .act { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .perm ol { margin: 8px 0 0; padding-left: 18px; font-size: 14px; color: var(--fg); }
+  .ok { color: var(--safe); font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .no { color: var(--check); font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .welcome { text-align: center; padding: 8px 0 18px; }
+  .welcome h2 { display: block; text-transform: none; letter-spacing: -0.01em; font-size: 24px; color: var(--fg); margin: 6px 0; }
+  .welcome p { color: var(--muted); max-width: 560px; margin: 0 auto; }
+
   @media (max-width: 640px) {
     .stats { grid-template-columns: 1fr; }
     .item { grid-template-columns: 26px 1fr; }
     .item .right { grid-column: 2; text-align: left; }
     .more { grid-column: 1 / 3; }
+    .entry { grid-template-columns: 22px 1fr auto; }
+    .entry .reveal { display: none; }
+    .perm { grid-template-columns: 1fr; }
+    .perm .icon { display: none; }
+    .perm .act { align-items: flex-start; }
   }
 </style>
 </head>
@@ -96,20 +149,48 @@
       <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="none" stroke="var(--track)" stroke-width="5"/><path d="M17 2 A15 15 0 0 1 31.3 21.6" fill="none" stroke="var(--safe)" stroke-width="5"/><path d="M31.3 21.6 A15 15 0 0 1 21 31.5" fill="none" stroke="var(--check)" stroke-width="5"/></svg>
       <div><h1>Diskwise</h1><p>What's eating your disk, why it's there, and whether it's safe to delete.</p></div>
     </div>
-    <label class="toggle"><input type="checkbox" id="projects" checked> Look through projects</label>
-    <button id="scanPhone">Scan Android phone</button>
-    <button id="scan" class="primary">Scan this computer</button>
+    <nav id="nav">
+      <button data-view="cleanup" class="on">Cleanup</button>
+      <button data-view="folders">Folders</button>
+      <button data-view="access">Access<span class="dot" id="accessDot" hidden></span></button>
+    </nav>
   </header>
 
-  <div class="card disk" id="disk" hidden>
-    <div class="row"><span id="diskText"></span><span id="diskFree"></span></div>
-    <div class="meter" id="diskMeter"></div>
-  </div>
+  <!-- Cleanup: the known space hogs -->
+  <section id="view-cleanup">
+    <div class="toolbar">
+      <span class="grow"></span>
+      <label class="toggle"><input type="checkbox" id="projects" checked> Look through projects</label>
+      <button id="scanPhone">Scan Android phone</button>
+      <button id="scan" class="primary">Scan this computer</button>
+    </div>
+    <div class="card disk" id="disk" hidden>
+      <div class="row"><span id="diskText"></span><span id="diskFree"></span></div>
+      <div class="meter" id="diskMeter"></div>
+    </div>
+    <div id="status"></div>
+    <div id="results">
+      <div class="card empty"><b>Nothing scanned yet</b>Scanning only looks. Nothing is deleted unless you pick it and confirm.</div>
+    </div>
+  </section>
 
-  <div id="status"></div>
-  <div id="results">
-    <div class="card empty"><b>Nothing scanned yet</b>Scanning only looks. Nothing is deleted unless you pick it and confirm.</div>
-  </div>
+  <!-- Folders: any folder, biggest first -->
+  <section id="view-folders" hidden>
+    <div class="toolbar">
+      <button id="chooseFolder" class="primary">Choose folder…</button>
+      <button id="homeFolder">Home</button>
+      <button id="rootFolder">Whole disk</button>
+      <form class="pathform" id="pathForm" hidden><input type="text" id="pathInput" placeholder="Type a folder path, like / or ~/Projects" aria-label="Folder path"><button>Open</button></form>
+    </div>
+    <div id="folderOut">
+      <div class="card empty"><b>Pick a folder to look inside</b>Diskwise shows what's in it, biggest first, and marks what it recognises. Looking never changes anything.</div>
+    </div>
+  </section>
+
+  <!-- Access: permissions, also the first-run welcome -->
+  <section id="view-access" hidden>
+    <div id="accessOut"></div>
+  </section>
 </div>
 
 <div class="bottom" id="bottom" hidden>
@@ -126,8 +207,11 @@
 const TOKEN = "__TOKEN__";
 const PLATFORM = "__PLATFORM__";
 const BIN = PLATFORM === "windows" ? "Recycle Bin" : "Trash";
+const FILES = PLATFORM === "macos" ? "Finder" : PLATFORM === "windows" ? "Explorer" : "Files";
 const LABELS = { safe: "Safe", check: "Check first", keep: "Keep" };
 let data = null;
+let ACCESS = { root: "/", home: "~" };
+let view = "cleanup";
 const selected = new Set();
 
 const $ = (id) => document.getElementById(id);
@@ -155,6 +239,18 @@ async function api(path, body) {
   if (!res.ok) throw new Error(json.error || res.statusText);
   return json;
 }
+const isApp = () => !!(window.pywebview && window.pywebview.api);
+
+function show(name) {
+  view = name;
+  for (const b of $("nav").children) b.classList.toggle("on", b.dataset.view === name);
+  for (const v of ["cleanup", "folders", "access"]) $("view-" + v).hidden = v !== name;
+  $("bottom").hidden = name !== "cleanup" || !data || !data.items.length;
+  if (name === "access") renderAccess();
+}
+$("nav").onclick = (e) => { const b = e.target.closest("button"); if (b) show(b.dataset.view); };
+
+/* ---------- Cleanup ---------- */
 
 function showDisk(disk) {
   if (!disk) return;
@@ -182,6 +278,7 @@ function idle() {
 }
 
 async function runScan(phone) {
+  show("cleanup");
   busy(phone ? "Reading your phone's storage…" : "Scanning…");
   selected.clear();
   try {
@@ -203,6 +300,10 @@ function render() {
     el("div", { class: "stat check" }, el("b", { text: human(t.check) }), el("small", { text: "🟡 Worth a look" })),
     el("div", { class: "stat keep" }, el("b", { text: human(t.keep) }), el("small", { text: "🔴 Keep (shown for context)" })),
   ));
+  if (!data.phone && ACCESS.full_disk_access === false) {
+    out.append(el("div", { class: "notice" }, `Some private folders were skipped because ${ACCESS.app_name} doesn't have Full Disk Access. `,
+      el("button", { class: "link", text: "Allow it", onclick: () => show("access") })));
+  }
   for (const n of data.notices) out.append(el("div", { class: "notice", text: n }));
   if (!items.length) {
     out.append(el("div", { class: "card empty" }, el("b", { text: "Nothing big found" }), "Your disk is in good shape."));
@@ -228,7 +329,7 @@ function render() {
     for (const it of group) list.append(row(it, biggest, color(c)));
     out.append(list);
   }
-  $("bottom").hidden = false;
+  $("bottom").hidden = view !== "cleanup";
   updateSelection();
 }
 
@@ -237,7 +338,7 @@ function row(it, biggest, color) {
     ? el("input", { type: "checkbox", "aria-label": `Select ${it.name}`, onchange: (e) => { e.target.checked ? selected.add(it.id) : selected.delete(it.id); updateSelection(); } })
     : el("span");
   if (it.cleanable && selected.has(it.id)) box.checked = true;
-  const more = el("div", { class: "more" },
+  const more = el("div", { class: "more selectable" },
     el("p", { text: `Made by ${it.creator}. Comes back: ${it.comes_back}` }),
     it.hint ? el("p", { class: "tip", text: (it.action === "manual" ? "Do it yourself: " : "Tip: ") + it.hint }) : null,
     it.action === "command" ? el("p", {}, "Cleaned by running ", el("code", { text: it.command.join(" ") })) : null,
@@ -272,10 +373,14 @@ function updateSelection() {
   $("clean").disabled = !items.length;
 }
 
+function modal(...kids) {
+  $("modalBox").replaceChildren(...kids);
+  $("modal").classList.add("show");
+}
+const closeModal = () => $("modal").classList.remove("show");
+
 function confirmClean() {
   const items = data.items.filter((i) => selected.has(i.id));
-  const box = $("modalBox"); box.replaceChildren();
-  box.append(el("h3", { text: `Clean ${items.length} item${items.length > 1 ? "s" : ""} (${human(items.reduce((a, i) => a + i.size, 0))})?` }));
   const ul = el("ul");
   for (const it of items) {
     const how = it.action === "command"
@@ -284,17 +389,19 @@ function confirmClean() {
     ul.append(el("li", {}, el("b", { text: it.name }), how,
       it.safety === "check" && it.hint ? el("div", { class: "what", text: "🟡 " + it.hint }) : null));
   }
-  box.append(ul);
-  box.append(el("p", { class: "what", text: `Files go to the ${BIN}, so you can undo. Empty the ${BIN} afterwards to get the space back.` }));
-  box.append(el("div", { class: "actions" },
-    el("button", { text: "Cancel", onclick: () => $("modal").classList.remove("show") }),
-    el("button", { class: "primary", text: "Clean", onclick: doClean }),
-  ));
-  $("modal").classList.add("show");
+  modal(
+    el("h3", { text: `Clean ${items.length} item${items.length > 1 ? "s" : ""} (${human(items.reduce((a, i) => a + i.size, 0))})?` }),
+    ul,
+    el("p", { class: "what", text: `Files go to the ${BIN}, so you can undo. Empty the ${BIN} afterwards to get the space back.` }),
+    el("div", { class: "actions" },
+      el("button", { text: "Cancel", onclick: closeModal }),
+      el("button", { class: "primary", text: "Clean", onclick: doClean }),
+    ),
+  );
 }
 
 async function doClean() {
-  $("modal").classList.remove("show");
+  closeModal();
   busy("Cleaning…");
   try {
     const r = await api("/api/clean", { ids: [...selected] });
@@ -319,15 +426,209 @@ async function doUndo() {
     const r = await api("/api/undo", {});
     const msg = r.session ? `Put back ${r.restored} item(s).` + (r.errors.length ? ` ${r.errors.length} couldn't be restored.` : "") + " Scan again to refresh." : "Nothing to undo.";
     $("results").prepend(el("div", { class: "card result", text: msg }));
-  } catch (e) { alert(e.message); }
+  } catch (e) { $("results").prepend(el("div", { class: "card notice", text: e.message })); }
 }
+
+/* ---------- Folders ---------- */
+
+let folder = null;
+let folderPoll = null;
+
+async function chooseFolder() {
+  show("folders");
+  if (isApp()) {
+    const picked = await window.pywebview.api.pick_folder(folder && folder.path || "");
+    if (picked) openFolder(picked);
+  } else {
+    $("pathForm").hidden = false;
+    $("pathInput").focus();
+  }
+}
+
+async function openFolder(path, admin = false) {
+  show("folders");
+  clearInterval(folderPoll);
+  try {
+    folder = await api("/api/folder", { path, admin });
+  } catch (e) {
+    $("folderOut").replaceChildren(el("div", { class: "card notice", text: e.message }));
+    return;
+  }
+  renderFolder();
+  folderPoll = setInterval(async () => {
+    try {
+      const snap = await api("/api/folder");
+      if (snap.path !== folder.path) return;
+      folder = snap;
+      renderFolder();
+      if (folder.done) clearInterval(folderPoll);
+    } catch {}
+  }, 500);
+}
+
+function renderFolder() {
+  const f = folder, out = $("folderOut");
+  out.replaceChildren();
+  const crumbs = el("div", { class: "crumbs selectable" });
+  f.crumbs.forEach((c, i) => {
+    if (i) crumbs.append(el("span", { text: "›" }));
+    crumbs.append(el("button", { text: c.name, title: c.path, onclick: () => openFolder(c.path) }));
+  });
+  const measured = f.entries.filter((e) => e.done).length;
+  const total = f.entries.reduce((a, e) => a + e.size, 0);
+  const head = el("div", { class: "toolbar" }, crumbs, el("span", { class: "grow" }),
+    el("span", { class: "what" }, f.done ? `${human(total)} · ${f.entries.length} items` : null),
+    el("button", { class: "small", text: `Show in ${FILES}`, onclick: () => api("/api/reveal", { path: f.path }).catch(() => {}) }));
+  out.append(head);
+
+  if (!f.done) {
+    out.append(el("div", { class: "card" }, el("span", { class: "spinner" }),
+      f.admin ? "Measuring with administrator rights. Enter your password in the system dialog…" : `Measuring… ${measured} of ${f.entries.length}`));
+  }
+
+  if (f.error === "denied" || (f.done && f.denied && !f.admin)) {
+    const box = el("div", { class: "card notice" },
+      f.error === "denied" ? `${ACCESS.app_name} isn't allowed to open this folder. ` : `${f.denied} folder(s) inside couldn't be read, so the sizes here are too small. `);
+    if (ACCESS.full_disk_access === false) box.append(el("button", { class: "small", text: "Allow Full Disk Access", onclick: () => show("access") }), " ");
+    if (ACCESS.admin_available && !ACCESS.admin) box.append(el("button", { class: "small", text: "Measure as administrator", onclick: () => openFolder(f.path, true) }));
+    out.append(box);
+  } else if (f.error) {
+    out.append(el("div", { class: "card notice", text: f.error }));
+  }
+
+  if (!f.entries.length) {
+    if (f.done && !f.error) out.append(el("div", { class: "card empty" }, el("b", { text: "This folder is empty" })));
+    return;
+  }
+  const biggest = Math.max(1, ...f.entries.map((e) => e.size));
+  const list = el("div", { class: "list" });
+  for (const e of f.entries.slice(0, 300)) list.append(entryRow(e, biggest));
+  out.append(list);
+  if (f.entries.length > 300) out.append(el("p", { class: "what", text: `…and ${f.entries.length - 300} smaller items.` }));
+  out.append(el("p", { class: "what", text: "The folder view only looks. To free space, use Cleanup: it knows what's safe to remove." }));
+}
+
+function entryRow(e, biggest) {
+  const k = e.known;
+  const tag = e.other_disk ? el("span", { class: "pill muted", text: "Another disk" })
+    : k && k.safety ? el("span", { class: `pill ${k.safety}`, text: LABELS[k.safety], title: k.name })
+    : null;
+  const sub = k && k.name ? `Diskwise knows this: ${k.name}`
+    : k && k.safe_inside ? `${human(k.safe_inside)} inside is 🟢 safe to clean`
+    : e.denied ? `${e.denied} folder(s) inside couldn't be read` : null;
+  return el("div", { class: "entry" + (e.is_dir ? " dir" : ""), onclick: e.is_dir ? () => openFolder(e.path) : null },
+    el("span", { text: e.is_dir ? "📁" : "📄" }),
+    el("div", { style: "min-width:0" }, el("div", { class: "nm" }, e.name, tag), sub ? el("div", { class: "sub", text: sub }) : null),
+    el("button", { class: "small reveal", text: "Show", title: `Show in ${FILES}`,
+      onclick: (ev) => { ev.stopPropagation(); api("/api/reveal", { path: e.path }).catch(() => {}); } }),
+    el("div", { class: "sz" }, e.done ? (e.other_disk ? "—" : human(e.size)) : el("span", { class: "spinner" }),
+      e.done && !e.other_disk ? el("div", { class: "bar" }, el("span", { style: `width:${Math.max(1, e.size / biggest * 100)}%;background:var(--c0)` })) : null),
+  );
+}
+
+$("chooseFolder").onclick = chooseFolder;
+$("homeFolder").onclick = () => openFolder(ACCESS.home);
+$("rootFolder").onclick = () => openFolder(ACCESS.root);
+$("pathForm").onsubmit = (e) => { e.preventDefault(); openFolder($("pathInput").value); };
+
+/* ---------- Access ---------- */
+
+async function loadAccess() {
+  try { ACCESS = await api("/api/access"); } catch { return; }
+  $("accessDot").hidden = !(ACCESS.full_disk_access === false || (ACCESS.platform === "macos" && !ACCESS.folders));
+}
+
+function perm(icon, title, text, state, ...actions) {
+  return el("div", { class: "perm" },
+    el("div", { class: "icon", text: icon }),
+    el("div", {}, el("h4", { text: title }), typeof text === "string" ? el("p", { text }) : text),
+    el("div", { class: "act" }, state, ...actions),
+  );
+}
+const yes = (t) => el("span", { class: "ok", text: "✓ " + t });
+const no = (t) => el("span", { class: "no", text: t });
+
+function renderAccess() {
+  const a = ACCESS, out = $("accessOut");
+  out.replaceChildren();
+  if (!a.onboarded) {
+    out.append(el("div", { class: "welcome" },
+      el("h2", { text: "Welcome to Diskwise" }),
+      el("p", { text: "Diskwise looks through your disk to find what's taking up space. Before it starts, choose what it may look at. You can change this any time in Access." })));
+  }
+  const list = el("div", { class: "list" });
+
+  if (a.platform === "macos") {
+    const fda = a.full_disk_access;
+    list.append(perm("🔐", "Full Disk Access (recommended)",
+      el("div", {},
+        el("p", { text: `Lets Diskwise measure folders macOS keeps private: Mail, Messages, Safari, iPhone backups and the Trash. Diskwise still only reads; it never cleans anything you don't pick.` }),
+        fda ? null : el("ol", {},
+          el("li", { text: "Click Open System Settings." }),
+          el("li", { text: `Turn on ${a.app_name} in the list. If it isn't there, click +, then pick ${a.desktop_app ? "Diskwise from Applications" : "your terminal app"}.` }),
+          el("li", { text: "If macOS asks, choose Quit & Reopen. Then come back here." }))),
+      fda ? yes("Allowed") : no("Not allowed"),
+      fda ? null : el("button", { class: "primary small", text: "Open System Settings", onclick: () => api("/api/access/settings", { pane: "full-disk" }) }),
+      fda ? null : el("button", { class: "small", text: "Check again", onclick: async () => { await loadAccess(); renderAccess(); } }),
+    ));
+
+    const f = a.folders;
+    const allowed = f && Object.values(f).every(Boolean);
+    list.append(perm("📂", "Desktop, Documents and Downloads",
+      fda ? "Covered by Full Disk Access." : "macOS asks once for each folder. Diskwise looks there for old installers, big downloads and forgotten projects.",
+      fda || allowed ? yes("Allowed") : f ? no(`Not allowed: ${Object.keys(f).filter((k) => !f[k]).join(", ")}`) : no("Not asked yet"),
+      fda || allowed ? null : el("button", { class: f ? "small" : "primary small", text: f ? "Ask again" : "Allow access…", onclick: requestFolders }),
+      f && !allowed && !fda ? el("button", { class: "link", text: "Open Files and Folders settings", onclick: () => api("/api/access/settings", { pane: "files" }) }) : null,
+    ));
+  }
+
+  const adminWord = a.platform === "windows" ? "administrator (UAC)" : "administrator";
+  list.append(perm("🛡️", "System folders and the whole disk",
+    `Folders outside your account, like ${a.root} and other users' folders, need ${adminWord} rights. Diskwise asks only when you measure one, using the system's own password prompt, and then only reads sizes. Cleaning always stays inside your home folder.`,
+    a.admin ? yes("Running as administrator") : a.admin_available ? el("span", { class: "what", text: "Asked when needed" }) : no("Not available"),
+    a.admin_available && !a.admin ? el("button", { class: "small", text: "Look at whole disk", onclick: () => openFolder(a.root) }) : null,
+  ));
+  out.append(list);
+
+  if (!a.onboarded) {
+    out.append(el("div", { class: "toolbar", style: "margin-top:16px" }, el("span", { class: "grow" }),
+      el("button", { class: "primary", text: "Continue", onclick: finishOnboarding })));
+  }
+}
+
+async function requestFolders() {
+  modal(el("h3", { text: "macOS will ask you now" }),
+    el("p", { text: "You'll see a system prompt for each folder: Desktop, Documents and Downloads. Click Allow on each one." }),
+    el("p", {}, el("span", { class: "spinner" }), "Waiting for your answers…"));
+  try { ACCESS = { ...ACCESS, ...(await api("/api/access/folders", {})) }; } catch {}
+  closeModal();
+  await loadAccess();
+  renderAccess();
+}
+
+async function finishOnboarding() {
+  try { ACCESS = await api("/api/onboarded", {}); } catch {}
+  show("cleanup");
+  runScan(false);
+}
+
+/* ---------- Wiring ---------- */
 
 $("scan").onclick = () => runScan(false);
 $("scanPhone").onclick = () => runScan(true);
 $("clean").onclick = confirmClean;
 $("pickSafe").onclick = () => { for (const i of data.items) if (i.cleanable && i.safety === "safe") selected.add(i.id); render(); };
-$("modal").onclick = (e) => { if (e.target === $("modal")) $("modal").classList.remove("show"); };
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("modal").classList.remove("show"); });
+$("modal").onclick = (e) => { if (e.target === $("modal")) closeModal(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+// Called from the desktop app's menu bar.
+window.app = { scan: (phone) => runScan(!!phone), chooseFolder, openFolder, showAccess: () => show("access") };
+
+function markApp() { if (isApp()) document.body.classList.add("app"); }
+window.addEventListener("pywebviewready", markApp);
+markApp();
+
+loadAccess().then(() => { if (!ACCESS.onboarded) show("access"); });
 </script>
 </body>
 </html>

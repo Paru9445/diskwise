@@ -26,6 +26,8 @@ Diskwise was built after a real cleanup on a MacBook Air where most of the lost 
   - 🟡 **Check first**: might hold something you want, like old backups or large downloads.
   - 🔴 **Keep**: needed by your system or apps. Diskwise shows it but never offers to delete it.
 - **Cleans what you choose**: nothing is deleted without your confirmation, and you can undo.
+- **Looks inside any folder**: pick a folder, or the whole disk, and see what's in it, biggest first, with what Diskwise recognises marked.
+- **Runs as an app or in the terminal**: a desktop app for macOS, Windows and Linux, or the `diskwise` command.
 
 ## Built to be safe
 
@@ -33,13 +35,17 @@ Diskwise was built after a real cleanup on a MacBook Air where most of the lost 
 - **Moves to Trash / Recycle Bin** instead of deleting permanently, and `diskwise undo` puts it all back.
 - **Never touches system files** or anything outside the known locations it scans. It refuses anything outside your home folder (except old macOS installers in Applications), your home folder itself, and folders directly in it (like Documents or Desktop).
 - **Proves a folder is generated before calling it a leftover.** A `node_modules` only counts next to a `package.json`; a `build` or `dist` folder must also be ignored by git.
+- **Asks before it looks.** On macOS it asks for Full Disk Access and your Desktop, Documents and Downloads folders up front, with the reason for each, instead of surprising you mid-scan.
+- **Administrator rights only to measure.** Folders outside your account are measured only when you ask, after the system's own password prompt, and only by a helper that reads sizes. Diskwise never cleans with administrator rights.
 - **Never deletes from your phone.** On Android it only clears app caches, using Android's own cleanup.
 - **Works offline.** Diskwise never sends anything anywhere. The visual view runs on your computer only.
-- **No dependencies.** Plain Python, open source, so you can read exactly what it does before you run it.
+- **No dependencies.** The `diskwise` command is plain Python, open source, so you can read exactly what it does before you run it. Only the desktop app adds one, [pywebview](https://pywebview.flowrl.com), for its window.
 
 ## Install
 
-You need Python 3.9 or newer (already on macOS and most Linux; on Windows get it from [python.org](https://www.python.org/downloads/)).
+**The app:** download it for your system from [Releases](https://github.com/Paru9445/diskwise/releases) (see [Desktop app](#desktop-app)).
+
+**The command:** you need Python 3.9 or newer (already on macOS and most Linux; on Windows get it from [python.org](https://www.python.org/downloads/)).
 
 ```bash
 pipx install git+https://github.com/Paru9445/diskwise
@@ -66,6 +72,9 @@ diskwise clean
 
 # Changed your mind? Put back everything the last clean moved
 diskwise undo
+
+# What's inside a folder, biggest first (deletes nothing)
+diskwise measure ~/Projects
 
 # Open the visual view in your browser
 diskwise ui
@@ -113,7 +122,34 @@ For scripts: `diskwise clean --only npm-cache gradle-caches --yes` cleans exactl
 
 ## Visual view
 
-`diskwise ui` opens a page in your browser with your disk, a breakdown by category, and every item with its explanation. Tick what you want and click **Clean selected**, with the same safety rules and an Undo button. It only listens on `127.0.0.1`, and the page can only ask to clean items from its own scan, never arbitrary paths.
+`diskwise ui` opens the same view as the desktop app, in your browser. It only listens on `127.0.0.1`, and the page can only ask to clean items from its own scan, never arbitrary paths. It has three tabs:
+
+- **Cleanup**: your disk, a breakdown by category, and every item with its explanation. Tick what you want and click **Clean selected**, with the same safety rules and an Undo button.
+- **Folders**: choose any folder, or **Whole disk**, and see what's inside it, biggest first. Click a folder to go in, and **Show** opens it in Finder or Explorer. Folders Diskwise recognises are marked, like "6.8 GB inside is 🟢 safe to clean". This view only looks: to free space, use Cleanup.
+- **Access**: what Diskwise may read, and buttons to allow more. If some folders couldn't be read, Folders offers **Measure as administrator**.
+
+## Desktop app
+
+Diskwise also comes as an app: a `.dmg` for macOS (Apple silicon), a `.zip` for Windows and a `.tar.gz` for Linux, on the [Releases](https://github.com/Paru9445/diskwise/releases) page. It's the visual view in its own window, with a menu bar (**Scan**, **Permissions**, **Help**) and a native folder picker.
+
+**First launch.** Diskwise shows a welcome screen that asks for access, one step at a time:
+
+1. **Full Disk Access** (macOS, recommended): click **Open System Settings**, turn on Diskwise, and choose **Quit & Reopen** if macOS asks. This lets Diskwise measure Mail, Messages, Safari, iPhone backups and the Trash.
+2. **Desktop, Documents and Downloads** (macOS): click **Allow access…**, then **Allow** on each system prompt. Not needed if you turned on Full Disk Access.
+3. **System folders and the whole disk**: nothing to do now. Diskwise asks for administrator rights with the system's own prompt (macOS password dialog, Windows UAC, Linux polkit) only when you measure such a folder.
+
+You can change any of this later in the **Access** tab.
+
+**Not code-signed yet.** On macOS, right-click Diskwise and choose **Open** the first time; on Windows, click **More info > Run anyway**. Until builds are signed, macOS may also forget Full Disk Access when you install a new version, so turn it on again after updating.
+
+**Build it yourself:**
+
+```bash
+python3 -m pip install -e ".[desktop]" pyinstaller
+python3 packaging/build.py
+```
+
+The download lands in `dist/release/`. Each system builds its own version; GitHub Actions builds all three when a version tag like `v0.2.0` is pushed and attaches them to a release.
 
 ## What it looks for
 
@@ -147,7 +183,8 @@ On macOS, iPhone backups and the Trash are protected by the system. To include t
 - [x] Android scan over adb
 - [x] Interactive clean with undo
 - [x] Visual view in your browser (`diskwise ui`)
-- [ ] Native desktop app
+- [x] Desktop app with folder view and proper permission prompts
+- [ ] Code-signed and notarized builds
 - [ ] Install with Homebrew, winget and PyPI
 
 ## Contributing

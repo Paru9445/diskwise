@@ -89,7 +89,8 @@ def usage(
             except OSError:
                 continue
             if stat.S_ISDIR(est.st_mode) and not _is_link(est):
-                if (one_device and est.st_dev != device) or entry.path in skip:
+                # Windows' scandir reports st_dev as 0; its mounts are reparse points, skipped above.
+                if (one_device and est.st_dev and est.st_dev != device) or entry.path in skip:
                     continue
                 result.bytes += _allocated(est)
                 stack.append(entry.path)

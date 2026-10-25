@@ -5,7 +5,8 @@
 - Desktop app for macOS, Windows and Linux: the visual view in its own window, with an app icon and a menu bar. Built by `packaging/build.py`; GitHub Actions builds all three on version tags.
 - Folders: pick any folder (or the whole disk) and see what's inside, biggest first, with what Diskwise recognises marked. Looking never changes anything. Also `diskwise measure FOLDER`.
 - Access: a first-run screen that asks for permissions properly. On macOS it checks Full Disk Access and opens the right System Settings page, and asks for Desktop, Documents and Downloads in one go instead of halfway through a scan.
-- Administrator measuring: folders outside your account can be measured with the system's own password prompt (macOS), polkit (Linux) or UAC (Windows). Only a read-only helper runs elevated; cleaning still stays inside your home folder.
+- Administrator measuring: folders outside your account can be measured with the system's own password prompt (macOS) or polkit (Linux). Only a read-only helper runs elevated, and it hands its results back on its output instead of writing a file, so it can't be tricked into overwriting system files. Off on Windows for now, where an elevated helper has no safe way to report back. Cleaning still stays inside your home folder.
+- Safer builds: GitHub Actions pinned to exact commits, build and test packages locked to exact versions with hashes (and at least two weeks old), read-only workflow permissions, and a `SHA256SUMS.txt` with every release.
 
 ## 0.1.0 (2026-10-21)
 

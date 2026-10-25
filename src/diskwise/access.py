@@ -5,8 +5,12 @@
   Desktop, Documents and Downloads each get a one-time system prompt.
 - Folders outside your account (/, other users, system data) need administrator
   rights. Diskwise never runs as administrator itself: it asks the system to run
-  a measuring helper (`diskwise measure`), which only reads sizes and writes them
-  to a temp file. Cleaning always stays inside your home folder.
+  a measuring helper (`diskwise measure --json`), which only reads sizes and
+  prints them. Diskwise reads that output directly, so the helper never writes a
+  file (an elevated process writing into a folder you own could be redirected
+  over a system file). Windows has no such output channel for elevated
+  processes, so administrator measuring is off there for now. Cleaning always
+  stays inside your home folder.
 """
 
 from __future__ import annotations
@@ -17,7 +21,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 from .util import LINUX, MACOS, WINDOWS, data_dir, home
@@ -77,8 +80,10 @@ def is_admin() -> bool:
 
 
 def admin_available() -> bool:
-    if MACOS or WINDOWS:
+    if MACOS:
         return True
+    # Not on Windows yet: an elevated process there can't hand its output back
+    # without a file, which isn't safe (see the module docstring).
     return LINUX and shutil.which("pkexec") is not None
 
 
@@ -161,36 +166,30 @@ def self_command(*args: str) -> list[str]:
 
 def measure_as_admin(folder: str) -> dict:
     """Measure `folder` with administrator rights. The system asks for the password."""
-    tmp = tempfile.mkdtemp(prefix="diskwise-")
-    out = os.path.join(tmp, "measure.json")
-    cmd = self_command("measure", folder, "--out", out)
+    if not admin_available():
+        raise AccessError("Measuring as administrator isn't available on this computer yet.")
+    cmd = self_command("measure", folder, "--json")
+    output = _run_macos_admin(cmd) if MACOS else _run_pkexec(cmd)
+    return parse_helper_output(output)
+
+
+def parse_helper_output(output: str) -> dict:
+    """The helper prints one JSON object; anything else means it didn't finish."""
     try:
-        if MACOS:
-            _run_macos_admin(cmd)
-        elif WINDOWS:
-            _run_windows_admin(cmd)
-        elif shutil.which("pkexec"):
-            proc = subprocess.run(["pkexec", *cmd], capture_output=True, text=True)
-            if proc.returncode in (126, 127):
-                raise AccessError("Administrator access wasn't given.")
-            if proc.returncode:
-                raise AccessError(proc.stderr.strip() or "The measuring helper failed.")
-        else:
-            raise AccessError("This computer has no pkexec, so Diskwise can't ask for administrator rights.")
-        try:
-            with open(out, encoding="utf-8") as f:
-                return json.load(f)
-        except (OSError, ValueError):
-            raise AccessError("The measuring helper didn't report back.")
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        data = json.loads(output.strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        raise AccessError("The measuring helper didn't report back.")
+    if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+        raise AccessError("The measuring helper didn't report back.")
+    return data
 
 
-def _run_macos_admin(cmd: list[str]) -> None:
+def _run_macos_admin(cmd: list[str]) -> str:
     # Pass the command as an argument, so nothing has to be escaped into AppleScript.
     script = [
         "on run argv",
-        "do shell script (item 1 of argv) with prompt (item 2 of argv) with administrator privileges",
+        "do shell script (item 1 of argv) with prompt (item 2 of argv)"
+        " with administrator privileges without altering line endings",
         "end run",
     ]
     prompt = "Diskwise wants to measure folders outside your account. It only reads sizes and changes nothing."
@@ -202,36 +201,13 @@ def _run_macos_admin(cmd: list[str]) -> None:
         if "-128" in proc.stderr or "User canceled" in proc.stderr:
             raise AccessError("Administrator access wasn't given.")
         raise AccessError(proc.stderr.strip() or "The measuring helper failed.")
+    return proc.stdout
 
 
-def _run_windows_admin(cmd: list[str]) -> None:
-    import ctypes
-    from ctypes import wintypes
-
-    class ShellExecuteInfo(ctypes.Structure):
-        _fields_ = [
-            ("cbSize", wintypes.DWORD), ("fMask", ctypes.c_ulong), ("hwnd", wintypes.HWND),
-            ("lpVerb", wintypes.LPCWSTR), ("lpFile", wintypes.LPCWSTR), ("lpParameters", wintypes.LPCWSTR),
-            ("lpDirectory", wintypes.LPCWSTR), ("nShow", ctypes.c_int), ("hInstApp", wintypes.HINSTANCE),
-            ("lpIDList", ctypes.c_void_p), ("lpClass", wintypes.LPCWSTR), ("hkeyClass", wintypes.HKEY),
-            ("dwHotKey", wintypes.DWORD), ("hIconOrMonitor", wintypes.HANDLE), ("hProcess", wintypes.HANDLE),
-        ]
-
-    info = ShellExecuteInfo()
-    info.cbSize = ctypes.sizeof(info)
-    info.fMask = 0x40  # SEE_MASK_NOCLOSEPROCESS: keep a handle so we can wait for it
-    info.lpVerb = "runas"  # shows the UAC prompt
-    info.lpFile = cmd[0]
-    info.lpParameters = subprocess.list2cmdline(cmd[1:])
-    info.nShow = 0
-    if not ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(info)):
-        if ctypes.GetLastError() == 1223:  # ERROR_CANCELLED
-            raise AccessError("Administrator access wasn't given.")
-        raise AccessError("Windows couldn't start the measuring helper.")
-    kernel32 = ctypes.windll.kernel32
-    kernel32.WaitForSingleObject(info.hProcess, 0xFFFFFFFF)
-    code = wintypes.DWORD()
-    kernel32.GetExitCodeProcess(info.hProcess, ctypes.byref(code))
-    kernel32.CloseHandle(info.hProcess)
-    if code.value:
-        raise AccessError("The measuring helper failed.")
+def _run_pkexec(cmd: list[str]) -> str:
+    proc = subprocess.run(["pkexec", *cmd], capture_output=True, text=True)
+    if proc.returncode in (126, 127):
+        raise AccessError("Administrator access wasn't given.")
+    if proc.returncode:
+        raise AccessError(proc.stderr.strip() or "The measuring helper failed.")
+    return proc.stdout

@@ -41,21 +41,37 @@ def test_crumbs_go_from_root_down(tmp_path):
     assert names[-1] == str(tmp_path) and len(names) == len(tmp_path.parts)
 
 
-def test_measure_command_writes_json(tmp_path):
+def test_measure_command_prints_json(tmp_path, capsys):
     write(tmp_path / "x" / "f.bin", 50_000)
-    out = tmp_path / "out.json"
-    assert main(["measure", str(tmp_path), "--out", str(out)]) == 0
-    data = json.loads(out.read_text())
+    assert main(["measure", str(tmp_path), "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
     assert data["path"] == str(tmp_path) and data["entries"][0]["name"] == "x"
 
 
-def test_self_command_runs_this_diskwise(tmp_path):
+def test_admin_helper_output_is_read_from_stdout_not_a_file(tmp_path):
+    """The elevated helper must never write a file: run it as the app would and parse its output."""
     import subprocess
 
     write(tmp_path / "x" / "f.bin", 50_000)
-    out = tmp_path / "out.json"
-    subprocess.run(access.self_command("measure", str(tmp_path), "--out", str(out)), check=True)
-    assert json.loads(out.read_text())["entries"][0]["name"] == "x"
+    before = set(tmp_path.rglob("*"))
+    proc = subprocess.run(access.self_command("measure", str(tmp_path), "--json"), capture_output=True, text=True, check=True)
+    assert access.parse_helper_output(proc.stdout)["entries"][0]["name"] == "x"
+    assert set(tmp_path.rglob("*")) == before
+
+
+def test_parse_helper_output_rejects_garbage():
+    for bad in ("", "password incorrect", "[1, 2]", '{"entries": "nope"}'):
+        with pytest.raises(access.AccessError):
+            access.parse_helper_output(bad)
+
+
+def test_no_admin_measuring_on_windows(monkeypatch):
+    monkeypatch.setattr(access, "MACOS", False)
+    monkeypatch.setattr(access, "LINUX", False)
+    monkeypatch.setattr(access, "WINDOWS", True)
+    assert access.admin_available() is False
+    with pytest.raises(access.AccessError):
+        access.measure_as_admin("C:\\")
 
 
 def wait_for_folder(port, token):

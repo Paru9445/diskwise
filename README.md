@@ -36,7 +36,7 @@ Diskwise was built after a real cleanup on a MacBook Air where most of the lost 
 - **Never touches system files** or anything outside the known locations it scans. It refuses anything outside your home folder (except old macOS installers in Applications), your home folder itself, and folders directly in it (like Documents or Desktop).
 - **Proves a folder is generated before calling it a leftover.** A `node_modules` only counts next to a `package.json`; a `build` or `dist` folder must also be ignored by git.
 - **Asks before it looks.** On macOS it asks for Full Disk Access and your Desktop, Documents and Downloads folders up front, with the reason for each, instead of surprising you mid-scan.
-- **Administrator rights only to measure.** Folders outside your account are measured only when you ask, after the system's own password prompt, and only by a helper that reads sizes. Diskwise never cleans with administrator rights.
+- **Administrator rights only to measure.** Folders outside your account are measured only when you ask, after the system's own password prompt, and only by a helper that reads sizes and writes nothing to disk. Diskwise never cleans with administrator rights.
 - **Never deletes from your phone.** On Android it only clears app caches, using Android's own cleanup.
 - **Works offline.** Diskwise never sends anything anywhere. The visual view runs on your computer only.
 - **No dependencies.** The `diskwise` command is plain Python, open source, so you can read exactly what it does before you run it. Only the desktop app adds one, [pywebview](https://pywebview.flowrl.com), for its window.
@@ -136,20 +136,31 @@ Diskwise also comes as an app: a `.dmg` for macOS (Apple silicon), a `.zip` for 
 
 1. **Full Disk Access** (macOS, recommended): click **Open System Settings**, turn on Diskwise, and choose **Quit & Reopen** if macOS asks. This lets Diskwise measure Mail, Messages, Safari, iPhone backups and the Trash.
 2. **Desktop, Documents and Downloads** (macOS): click **Allow access…**, then **Allow** on each system prompt. Not needed if you turned on Full Disk Access.
-3. **System folders and the whole disk**: nothing to do now. Diskwise asks for administrator rights with the system's own prompt (macOS password dialog, Windows UAC, Linux polkit) only when you measure such a folder.
+3. **System folders and the whole disk**: nothing to do now. Diskwise asks for administrator rights with the system's own prompt (macOS password dialog, Linux polkit) only when you measure such a folder. This isn't available on Windows yet.
 
 You can change any of this later in the **Access** tab.
 
 **Not code-signed yet.** On macOS, right-click Diskwise and choose **Open** the first time; on Windows, click **More info > Run anyway**. Until builds are signed, macOS may also forget Full Disk Access when you install a new version, so turn it on again after updating.
 
-**Build it yourself:**
+**Check your download.** Each release has a `SHA256SUMS.txt`. Compare it with the checksum of the file you downloaded:
 
 ```bash
-python3 -m pip install -e ".[desktop]" pyinstaller
+shasum -a 256 Diskwise-*.dmg
+```
+
+On Windows, use `Get-FileHash Diskwise-*.zip` in PowerShell. If the checksums don't match, don't open the file.
+
+**Build it yourself** with the same locked, hash-checked packages the releases use:
+
+```bash
+python3 -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-bootstrap.txt
+python3 -m pip install --require-hashes --prefer-binary --no-build-isolation -r packaging/requirements-build.txt
 python3 packaging/build.py
 ```
 
 The download lands in `dist/release/`. Each system builds its own version; GitHub Actions builds all three when a version tag like `v0.2.0` is pushed and attaches them to a release.
+
+**How builds are protected.** GitHub Actions are pinned to exact commits, and every build and test package is pinned to an exact version and checked against its hash. Locks only take releases at least two weeks old, so a freshly hijacked release can't slip in. The one exception is a security fix, noted in the lock's source file. To update a lock, edit the `.in` file next to it and rerun the command at its top.
 
 ## What it looks for
 

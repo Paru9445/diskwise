@@ -216,12 +216,9 @@ def cmd_measure(args) -> int:
     except (ValueError, OSError) as exc:
         print(f"  {exc}", file=sys.stderr)
         return 1
-    if args.out or args.json:
-        data = json.dumps({"path": str(folder), "entries": to_dicts(entries)})
-        if args.out:
-            Path(args.out).write_text(data, encoding="utf-8")
-        else:
-            print(data)
+    if args.json:
+        # One line on stdout: the administrator helper is read this way, so it never writes a file.
+        print(json.dumps({"path": str(folder), "entries": to_dicts(entries)}))
         return 0
     for e in entries:
         if e.size or e.other_disk:
@@ -284,7 +281,6 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("measure", help="show what's inside any folder, biggest first (deletes nothing)")
     p.add_argument("folder", nargs="?", default="~", help="the folder to measure (default: your home folder)")
     p.add_argument("--json", action="store_true", help="print results as JSON")
-    p.add_argument("--out", metavar="FILE", help="write JSON results to FILE")
     p.set_defaults(func=cmd_measure)
 
     p = sub.add_parser("ui", help="open the visual view in your browser")

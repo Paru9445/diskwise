@@ -1,0 +1,5 @@
+# What CI tests with. Locked with hashes in requirements.txt:
+#   uv pip compile tests/requirements.in --universal --python-version 3.9 \
+#     --generate-hashes --exclude-newer <two weeks ago> -o tests/requirements.txt
+pytest
+setuptools>=61  # builds diskwise itself with --no-build-isolation, so the build tool is locked too

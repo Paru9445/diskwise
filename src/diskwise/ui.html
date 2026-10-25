@@ -582,9 +582,12 @@ function renderAccess() {
     ));
   }
 
-  const adminWord = a.platform === "windows" ? "administrator (UAC)" : "administrator";
-  list.append(perm("🛡️", "System folders and the whole disk",
-    `Folders outside your account, like ${a.root} and other users' folders, need ${adminWord} rights. Diskwise asks only when you measure one, using the system's own password prompt, and then only reads sizes. Cleaning always stays inside your home folder.`,
+  const adminText = a.admin_available || a.admin
+    ? `Folders outside your account, like ${a.root} and other users' folders, need administrator rights. Diskwise asks only when you measure one, using the system's own password prompt, and then only reads sizes. Cleaning always stays inside your home folder.`
+    : a.platform === "windows"
+      ? `Measuring as administrator isn't available on Windows yet. Folders Diskwise can't read are still listed, with a note that their sizes are too small. Cleaning always stays inside your home folder.`
+      : `Measuring as administrator needs pkexec (polkit), which isn't installed. Folders Diskwise can't read are still listed, with a note that their sizes are too small.`;
+  list.append(perm("🛡️", "System folders and the whole disk", adminText,
     a.admin ? yes("Running as administrator") : a.admin_available ? el("span", { class: "what", text: "Asked when needed" }) : no("Not available"),
     a.admin_available && !a.admin ? el("button", { class: "small", text: "Look at whole disk", onclick: () => openFolder(a.root) }) : null,
   ));

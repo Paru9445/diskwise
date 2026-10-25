@@ -1,0 +1,2 @@
+# Installed first, so the one source-only package (proxy-tools) builds with a locked setuptools.
+setuptools==84.0.0

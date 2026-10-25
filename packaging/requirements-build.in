@@ -1,0 +1,8 @@
+# What the desktop app is built with. Locked with hashes in requirements-build.txt:
+#   uv pip compile packaging/requirements-build.in --universal --python-version 3.12 \
+#     --generate-hashes --exclude-newer <two weeks ago> -o packaging/requirements-build.txt
+# The two-week cutoff keeps out freshly published (possibly hijacked) releases.
+pywebview==6.2.1; sys_platform != "linux"
+pywebview[qt]==6.2.1; sys_platform == "linux"  # Qt's web view ships inside the Linux app
+pyinstaller==6.22.3
+pillow==13.0.0  # build-time only, turns icon.png into the Windows icon; 13.0.0 fixes CVE-2026-112900

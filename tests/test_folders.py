@@ -48,6 +48,13 @@ def test_measure_command_prints_json(tmp_path, capsys):
     assert data["path"] == str(tmp_path) and data["entries"][0]["name"] == "x"
 
 
+def test_measure_command_takes_relative_paths(tmp_path, monkeypatch, capsys):
+    write(tmp_path / "x" / "f.bin", 50_000)
+    monkeypatch.chdir(tmp_path)
+    assert main(["measure", ".", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["path"] == str(tmp_path)
+
+
 def test_admin_helper_output_is_read_from_stdout_not_a_file(tmp_path):
     """The elevated helper must never write a file: run it as the app would and parse its output."""
     import subprocess

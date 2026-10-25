@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -211,7 +212,8 @@ def cmd_measure(args) -> int:
     from .folders import measure, resolve_folder, to_dicts
 
     try:
-        folder = resolve_folder(args.folder)
+        # In a terminal `.` or `Projects` means "from here"; the visual view only takes full paths.
+        folder = resolve_folder(os.path.abspath(os.path.expanduser(args.folder)))
         entries = measure(folder)
     except (ValueError, OSError) as exc:
         print(f"  {exc}", file=sys.stderr)

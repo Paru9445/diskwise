@@ -33,8 +33,10 @@ jobs:
       # Every package is pinned to an exact version and checked against its hash.
       # setuptools goes first so the one source-only package (proxy-tools) builds with
       # it instead of an unchecked download. PyInstaller reads Diskwise from src/.
-      - run: python -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-bootstrap.txt
-      - run: python -m pip install --require-hashes --prefer-binary --no-build-isolation -r packaging/requirements-build.txt
+      # Block style (|): ":all: " would otherwise be read as YAML.
+      - run: |
+          python -m pip install --require-hashes --only-binary=:all: -r packaging/requirements-bootstrap.txt
+          python -m pip install --require-hashes --prefer-binary --no-build-isolation -r packaging/requirements-build.txt
       - run: python packaging/build.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
